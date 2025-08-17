@@ -30,7 +30,7 @@ class ChatService:
         store: ConversationStore,
         max_history_messages: Optional[int] = None,
     ):
-        logger.debug("ChatService.__init__ model=%s max_history=%s", client.model_name, max_history_messages)
+        logger.debug(f"ChatService.__init__ model={client.model_name} max_history={max_history_messages}")
         self.client = client
         self.prompt_loader = prompt_loader
         self.store = store
@@ -42,7 +42,7 @@ class ChatService:
         msgs.append(
             {
                 "role": "system",
-                "content": [{"type": "text", "text": system_prompt}],
+                "content": [{"type": "input_text", "text": system_prompt}],
             }
         )
         hist = history
@@ -51,36 +51,37 @@ class ChatService:
 
         for m in hist:
             if m.get("role") in {"user", "assistant"}:
+                content_type = "input_text" if m["role"] == "user" else "output_text"
                 msgs.append(
                     {
                         "role": m["role"],
-                        "content": [{"type": "text", "text": str(m.get("content", ""))}],
+                        "content": [{"type": content_type, "text": str(m.get("content", ""))}],
                     }
                 )
 
         msgs.append(
             {
                 "role": "user",
-                "content": [{"type": "text", "text": new_user_text}],
+                "content": [{"type": "input_text", "text": new_user_text}],
             }
         )
         return msgs
 
     def chat(self, user_text: str, conversation_id: Optional[str] = None) -> ChatResult:
         conv_id = conversation_id or str(uuid.uuid4())
-        logger.info("ChatService.chat conversation_id=%s", conv_id)
+        logger.info(f"ChatService.chat conversation_id={conv_id}")
         system_prompt = self.prompt_loader.load()
-        logger.debug("System prompt loaded (%d chars)", len(system_prompt))
+        logger.debug(f"System prompt loaded ({len(system_prompt)} chars)")
         history = self.store.load(conv_id)
-        logger.debug("Loaded history messages: %d", len(history))
+        logger.debug(f"Loaded history messages: {len(history)}")
 
         msgs = self._build_messages(system_prompt, history, user_text)
-        logger.debug("Built messages: %d", len(msgs))
+        logger.debug(f"Built messages: {len(msgs)}")
 
         resp = self.client.create(msgs)
         assistant_text = resp.output_text
         response_id = getattr(resp, "id", None)
-        logger.info("OpenAI response id=%s (len=%d)", response_id, len(assistant_text or ""))
+        logger.info(f"OpenAI response id={response_id} (len={len(assistant_text or '')})")
 
         user_msg = {
             "id": str(uuid.uuid4()),
