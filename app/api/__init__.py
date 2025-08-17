@@ -1,4 +1,4 @@
-from config import (
+from app.config import (
     CONVERSATIONS_DIR,
     MAX_HISTORY_MESSAGES,
     MODEL_NAME,
@@ -7,9 +7,9 @@ from config import (
 from fastapi import FastAPI
 from openai import OpenAI
 
-from app.routes import router
+from app.api.routes import router
 from app.services.chat import ChatService
-from app.storage.conversation_store import ConversationStore
+from app.services.conversation_store import ConversationStore
 from app.utils.prompt_loader import PromptLoader
 
 

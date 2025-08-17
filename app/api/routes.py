@@ -1,9 +1,27 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.api.schemas import ChatRequest, ChatResponse, HealthResponse, RouteResponse
+from app.api.main import (
+    annotate_intermediate_localities,
+    build_markdown,
+    ensure_coords,
+    enrich_localities_with_yandex,
+    ors_extract_steps,
+    ors_route,
+)
+from app.api.schemas import (
+    ChatRequest,
+    ChatResponse,
+    HealthResponse,
+    OptionsIn,
+    RouteRequest,
+    RouteResponse,
+)
 from app.services.chat import ChatService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def get_chat_service(request: Request) -> ChatService:
@@ -31,7 +49,7 @@ def chat(req: ChatRequest, svc: ChatService = Depends(get_chat_service)):
 # -------------------- Эндпоинт --------------------
 
 
-@app.post("/route", response_model=RouteResponse)
+@router.post("/route", response_model=RouteResponse)
 async def route(req: RouteRequest) -> RouteResponse:
     try:
         a_lat, a_lon, a_label = await ensure_coords(req.a)
