@@ -8,6 +8,15 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
+from app.config import (
+    ORS_API_KEY,
+    ORS_DIRECTIONS_URL,
+    REV_GEOCODER_CONCURRENCY,
+    YANDEX_GEOCODER_API_KEY,
+    YANDEX_GEOCODER_URL,
+)
+from app.api.schemas import OptionsIn, PointIn, StepOut, ViaLocality
+
 # HTTP клиенты
 _http_timeout = httpx.Timeout(25.0, connect=15.0)
 geocoder_client = httpx.AsyncClient(timeout=_http_timeout)
