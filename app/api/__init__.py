@@ -2,15 +2,16 @@ from app.config import (
     CONVERSATIONS_DIR,
     MAX_HISTORY_MESSAGES,
     MODEL_NAME,
+    OPENAI_API_KEY,
     SYSTEM_PROMPT_PATH,
 )
 from fastapi import FastAPI
-from openai import OpenAI
 
 from app.api.routes import router
 from app.services.chat import ChatService
 from app.services.conversation_store import ConversationStore
 from app.utils.prompt_loader import PromptLoader
+from app.integration.chatgpt import OpenAIClient
 
 
 def create_app() -> FastAPI:
@@ -18,14 +19,13 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def _startup():
-        client = OpenAI()  # берет OPENAI_API_KEY из окружения
+        client = OpenAIClient(api_key=OPENAI_API_KEY, model_name=MODEL_NAME)
         prompt_loader = PromptLoader(SYSTEM_PROMPT_PATH)
         store = ConversationStore(CONVERSATIONS_DIR)
         chat_service = ChatService(
             client=client,
             prompt_loader=prompt_loader,
             store=store,
-            model_name=MODEL_NAME,
             max_history_messages=MAX_HISTORY_MESSAGES,
         )
         app.state.chat_service = chat_service

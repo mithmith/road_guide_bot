@@ -1,42 +1,60 @@
-import sys
+"""OpenAI client integration utilities.
+
+This module provides a small wrapper around the official ``openai``
+client so the rest of the project can interact with the Responses API
+without dealing with low level configuration details.
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Any
 
 from openai import OpenAI
 
-from app.config import OPENAI_API_KEY, OUT_PATH, PROMPT_PATH
+from app.config import MODEL_NAME, OPENAI_API_KEY, OUT_PATH, PROMPT_PATH
 
 
-def main() -> int:
-    try:
-        prompt = PROMPT_PATH.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        print(f"Не найден файл промпта: {PROMPT_PATH}", file=sys.stderr)
-        return 1
+class OpenAIClient:
+    """Convenience wrapper for the OpenAI Responses API."""
 
-    client = OpenAI(api_key=OPENAI_API_KEY)  # ключ OPENAI_API_KEY
+    def __init__(
+        self,
+        api_key: str = OPENAI_API_KEY,
+        model_name: str = MODEL_NAME,
+    ) -> None:
+        self.model_name = model_name
+        # ``OpenAI`` reads the key from the environment if ``api_key`` is ``None``.
+        # Passing it explicitly keeps the behaviour predictable.
+        self._client = OpenAI(api_key=api_key)
 
-    try:
-        resp = client.responses.create(
-            model="gpt-5-mini",
-            input=prompt,
+    def create(self, input_data: Any):
+        """Send ``input_data`` to the Responses API.
+
+        Parameters
+        ----------
+        input_data:
+            Either a plain string prompt or a list of messages compatible with
+            the Responses API.
+        """
+
+        return self._client.responses.create(
+            model=self.model_name,
+            input=input_data,
         )
-        text = resp.output_text  # удобное свойство Responses API
-    except Exception as e:
-        print(f"Ошибка обращения к OpenAI API: {e}", file=sys.stderr)
-        return 2
 
-    # Вывод в консоль
-    print(text)
+    def run_prompt_file(
+        self,
+        prompt_path: Path = PROMPT_PATH,
+        out_path: Path = OUT_PATH,
+    ) -> str:
+        """Execute a prompt stored in ``prompt_path`` and save the result.
 
-    # Дублирование в Markdown-файл
-    try:
-        OUT_PATH.write_text(text, encoding="utf-8")
-    except Exception as e:
-        print(f"Не удалось записать {OUT_PATH}: {e}", file=sys.stderr)
-        return 3
+        The text response is returned and written to ``out_path``.
+        """
 
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+        prompt = prompt_path.read_text(encoding="utf-8")
+        resp = self.create(prompt)
+        text = resp.output_text
+        out_path.write_text(text, encoding="utf-8")
+        return text
