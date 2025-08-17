@@ -14,7 +14,6 @@ from app.api.schemas import (
     ChatRequest,
     ChatResponse,
     HealthResponse,
-    OptionsIn,
     RouteRequest,
     RouteResponse,
 )
@@ -38,7 +37,8 @@ def healthcheck():
 
 @router.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest, svc: ChatService = Depends(get_chat_service)):
-    result = svc.chat(user_text=req.user_text, conversation_id=req.conversation_id)
+    conv_id = str(req.conversation_id) if req.conversation_id else None
+    result = svc.chat(user_text=req.user_text, conversation_id=conv_id)
     return ChatResponse(
         conversation_id=result.conversation_id,
         assistant_text=result.assistant_text,
@@ -55,7 +55,7 @@ async def route(req: RouteRequest) -> RouteResponse:
         a_lat, a_lon, a_label = await ensure_coords(req.a)
         b_lat, b_lon, b_label = await ensure_coords(req.b)
 
-        data = await ors_route(a_lat, a_lon, b_lat, b_lon, req.options or OptionsIn())
+        data = await ors_route(a_lat, a_lon, b_lat, b_lon, req.options)
         steps, total_m, total_s, coords, step_bounds = ors_extract_steps(data)
 
         if not steps:

@@ -5,7 +5,7 @@ import os
 from typing import Dict, List, Optional, Tuple
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from app.config import (
@@ -25,8 +25,6 @@ ors_client = httpx.AsyncClient(timeout=_http_timeout)
 # Логирование
 logging.basicConfig(level=os.getenv("LOGLEVEL", "INFO"))
 log = logging.getLogger("route-api")
-
-app = FastAPI(title="Route Text API (Yandex Geocoder + ORS)", version="1.1.0")
 
 # -------------------- Утилиты форматирования/геометрии --------------------
 
@@ -441,7 +439,6 @@ async def ensure_coords(p: PointIn) -> Tuple[float, float, str]:
 # -------------------- Грейсфул шатдаун --------------------
 
 
-@app.on_event("shutdown")
-async def _shutdown():
+async def close_http_clients() -> None:
     await geocoder_client.aclose()
     await ors_client.aclose()
