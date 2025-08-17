@@ -26,9 +26,6 @@ ors_client = httpx.AsyncClient(timeout=_http_timeout)
 logging.basicConfig(level=os.getenv("LOGLEVEL", "INFO"))
 log = logging.getLogger("route-api")
 
-# -------------------- Утилиты форматирования/геометрии --------------------
-
-
 def haversine_m(lat1, lon1, lat2, lon2) -> float:
     R = 6371000.0
     phi1 = math.radians(lat1)
@@ -55,7 +52,6 @@ def sample_points_along(
     """
     if len(coords_lonlat) < 2:
         return []
-    # накопим длины по сегментам
     seg_len: List[float] = []
     total = 0.0
     for i in range(len(coords_lonlat) - 1):
@@ -77,13 +73,11 @@ def sample_points_along(
     acc = 0.0
     seg_idx = 0
     for tdist in targets:
-        # идем вперёд до нужного сегмента
         while seg_idx < len(seg_len) and acc + seg_len[seg_idx] < tdist:
             acc += seg_len[seg_idx]
             seg_idx += 1
         if seg_idx >= len(seg_len):
             break
-        # интерполяция внутри сегмента
         remain = tdist - acc
         frac = 0.0 if seg_len[seg_idx] == 0 else (remain / seg_len[seg_idx])
         lon1, lat1 = coords_lonlat[seg_idx]
@@ -115,9 +109,6 @@ def fmt_duration_s(s: float) -> str:
 
 def round6(x: float) -> float:
     return float(f"{x:.6f}")
-
-
-# -------------------- Геокодер Яндекс --------------------
 
 
 async def geocode_forward(address: str) -> Tuple[float, float]:

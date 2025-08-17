@@ -46,9 +46,6 @@ def chat(req: ChatRequest, svc: ChatService = Depends(get_chat_service)):
     )
 
 
-# -------------------- Эндпоинт --------------------
-
-
 @router.post("/route", response_model=RouteResponse)
 async def route(req: RouteRequest) -> RouteResponse:
     try:

@@ -20,14 +20,7 @@ class ChatResult:
 
 
 class ChatService:
-    """
-    Сервис ведения диалогов и общения с моделью.
-    Инкапсулирует:
-      - загрузку системного промпта
-      - восстановление истории
-      - сбор сообщений и вызов OpenAI Responses API
-      - логирование истории в ConversationStore
-    """
+    """Сервис диалогов: строит сообщения, вызывает модель и логирует историю."""
 
     def __init__(
         self,
@@ -46,14 +39,12 @@ class ChatService:
         self, system_prompt: str, history: List[Dict[str, Any]], new_user_text: str
     ):
         msgs: List[Dict[str, Any]] = []
-        # 1) system
         msgs.append(
             {
                 "role": "system",
                 "content": [{"type": "text", "text": system_prompt}],
             }
         )
-        # 2) (опционально) ограничим длину истории сообщениями с ролями user/assistant
         hist = history
         if (
             self.max_history_messages is not None
@@ -72,7 +63,6 @@ class ChatService:
                     }
                 )
 
-        # 3) новое сообщение пользователя
         msgs.append(
             {
                 "role": "user",
@@ -92,7 +82,6 @@ class ChatService:
         assistant_text = resp.output_text
         response_id = getattr(resp, "id", None)
 
-        # Логируем обе стороны
         user_msg = {
             "id": str(uuid.uuid4()),
             "conversation_id": conv_id,

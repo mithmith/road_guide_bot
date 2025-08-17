@@ -33,9 +33,6 @@ class HealthResponse(BaseModel):
     status: str = "ok"
 
 
-# -------------------- Схемы --------------------
-
-
 class PointIn(BaseModel):
     address: Optional[str] = None
     lat: Optional[float] = None
