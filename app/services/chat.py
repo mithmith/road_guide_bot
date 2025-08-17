@@ -1,10 +1,9 @@
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from openai import OpenAI
-
+from app.integration.chatgpt import OpenAIClient
 from app.services.conversation_store import ConversationStore
 from app.utils.prompt_loader import PromptLoader
 
@@ -32,17 +31,16 @@ class ChatService:
 
     def __init__(
         self,
-        client: OpenAI,
+        client: OpenAIClient,
         prompt_loader: PromptLoader,
         store: ConversationStore,
-        model_name: str,
         max_history_messages: Optional[int] = None,
     ):
         self.client = client
         self.prompt_loader = prompt_loader
         self.store = store
-        self.model_name = model_name
         self.max_history_messages = max_history_messages
+        self.model_name = client.model_name
 
     def _build_messages(
         self, system_prompt: str, history: List[Dict[str, Any]], new_user_text: str
@@ -90,10 +88,7 @@ class ChatService:
 
         msgs = self._build_messages(system_prompt, history, user_text)
 
-        resp = self.client.responses.create(
-            model=self.model_name,
-            input=msgs,
-        )
+        resp = self.client.create(msgs)
         assistant_text = resp.output_text
         response_id = getattr(resp, "id", None)
 
