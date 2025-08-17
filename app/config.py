@@ -1,39 +1,87 @@
-import os
+import sys
+from functools import lru_cache
 from pathlib import Path
 
-# Сетевые параметры
-HOST: str = "127.0.0.1"
-PORT: int = 8000
+from loguru import logger as log
+from pydantic_settings import BaseSettings
 
-# Модель и пути
-MODEL_NAME: str = "gpt-5-mini"
-SYSTEM_PROMPT_PATH: Path = Path("app/prompts/main_guide.md")
-CONVERSATIONS_DIR: Path = Path("conversations")
 
-# Прочие настройки (можете расширять по необходимости)
-MAX_HISTORY_MESSAGES: int | None = None  # например, ограничение «окна» истории
+class Settings(BaseSettings):
+    __version__: str = "1.0.39"
 
-# Значения берутся из окружения. Ранее переменные были пустыми строками,
-# из-за чего приложение сразу падало с ``RuntimeError``, даже если
-# соответствующие переменные окружения были заданы при запуске. Читаем
-# значения через ``os.getenv``.
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-YANDEX_GEOCODER_API_KEY = os.getenv("YANDEX_GEOCODER_API_KEY", "")
-ORS_API_KEY = os.getenv("ORS_API_KEY", "")
-PROMPT_PATH = os.getenv("PROMPT_PATH", "")
-OUT_PATH = os.getenv("OUT_PATH", "")
+    # Network settings
+    host: str = "127.0.0.1"
+    port: int = 8000
 
-# -------------------- Конфигурация --------------------
+    # Model and paths
+    model_name: str = "gpt-5-mini"
+    system_prompt_path: Path = Path("app/prompts/main_guide.md")
+    conversations_dir: Path = Path("conversations")
 
-if not YANDEX_GEOCODER_API_KEY:
-    raise RuntimeError("Set YANDEX_GEOCODER_API_KEY")
-if not ORS_API_KEY:
-    raise RuntimeError("Set ORS_API_KEY")
+    # Other settings
+    max_history_messages: int | None = None
 
-YANDEX_GEOCODER_URL = "https://geocode-maps.yandex.ru/v1"
-ORS_DIRECTIONS_URL = (
-    "https://api.openrouteservice.org/v2/directions/driving-car/geojson"
-)
+    # Environment variables
+    openai_api_key: str = ""
+    yandex_geocoder_api_key: str
+    ors_api_key: str
+    prompt_path: Path = Path("main_prompt.md")
+    out_path: Path = Path("responce.md")
 
-# Троттлинг reverse-геокодера, чтобы не долбить Яндекс слишком агрессивно
-REV_GEOCODER_CONCURRENCY: int = 4
+    # Logging
+    log_lvl: str = "INFO"
+    log_path: Path = Path("logs/app.log")
+
+    # External services
+    yandex_geocoder_url: str = "https://geocode-maps.yandex.ru/v1"
+    ors_directions_url: str = (
+        "https://api.openrouteservice.org/v2/directions/driving-car/geojson"
+    )
+    rev_geocoder_concurrency: int = 4
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+@lru_cache()
+def get_logger(log_path: Path, level: str):
+    log.remove(0)
+    log.add(sys.stderr, format="{time} | {level} | {message}", level=level)
+    log.add(
+        log_path,
+        format="{time} | {level} | {message}",
+        level="DEBUG",
+        rotation="1 days",
+        retention="30 days",
+        catch=True,
+    )
+    return log
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()
+logger = get_logger(settings.log_path, settings.log_lvl)
+
+# Export constants for backward compatibility
+HOST = settings.host
+PORT = settings.port
+MODEL_NAME = settings.model_name
+SYSTEM_PROMPT_PATH = settings.system_prompt_path
+CONVERSATIONS_DIR = settings.conversations_dir
+MAX_HISTORY_MESSAGES = settings.max_history_messages
+
+OPENAI_API_KEY = settings.openai_api_key
+YANDEX_GEOCODER_API_KEY = settings.yandex_geocoder_api_key
+ORS_API_KEY = settings.ors_api_key
+PROMPT_PATH = settings.prompt_path
+OUT_PATH = settings.out_path
+
+YANDEX_GEOCODER_URL = settings.yandex_geocoder_url
+ORS_DIRECTIONS_URL = settings.ors_directions_url
+REV_GEOCODER_CONCURRENCY = settings.rev_geocoder_concurrency
+
