@@ -1,31 +1,16 @@
-from typing import List, Literal, Optional
-from uuid import UUID
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, model_validator
-
-Role = Literal["system", "user", "assistant"]
 
 
 class ChatRequest(BaseModel):
     user_text: str = Field(..., description="Свежий ввод пользователя")
-    conversation_id: Optional[UUID] = Field(
-        None, description="UUID/идентификатор диалога"
-    )
+    conversation_id: Optional[str] = Field(None, description="UUID/идентификатор диалога")
 
 
 class ChatResponse(BaseModel):
     conversation_id: str
     assistant_text: str
-    response_id: Optional[str] = None
-
-
-class MessageRecord(BaseModel):
-    id: str
-    conversation_id: str
-    role: Role
-    content: str
-    ts: str
-    model: Optional[str] = None
     response_id: Optional[str] = None
 
 
@@ -62,7 +47,7 @@ class ViaLocality(BaseModel):
 class RouteRequest(BaseModel):
     a: PointIn
     b: PointIn
-    options: OptionsIn = Field(default_factory=OptionsIn)
+    options: Optional[OptionsIn] = None
 
 
 class StepOut(BaseModel):

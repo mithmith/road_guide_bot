@@ -35,9 +35,7 @@ class ChatService:
         self.max_history_messages = max_history_messages
         self.model_name = client.model_name
 
-    def _build_messages(
-        self, system_prompt: str, history: List[Dict[str, Any]], new_user_text: str
-    ):
+    def _build_messages(self, system_prompt: str, history: List[Dict[str, Any]], new_user_text: str):
         msgs: List[Dict[str, Any]] = []
         msgs.append(
             {
@@ -46,10 +44,7 @@ class ChatService:
             }
         )
         hist = history
-        if (
-            self.max_history_messages is not None
-            and len(history) > self.max_history_messages
-        ):
+        if self.max_history_messages is not None and len(history) > self.max_history_messages:
             hist = history[-self.max_history_messages :]
 
         for m in hist:
@@ -57,9 +52,7 @@ class ChatService:
                 msgs.append(
                     {
                         "role": m["role"],
-                        "content": [
-                            {"type": "text", "text": str(m.get("content", ""))}
-                        ],
+                        "content": [{"type": "text", "text": str(m.get("content", ""))}],
                     }
                 )
 

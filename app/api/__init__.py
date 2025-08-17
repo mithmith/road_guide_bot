@@ -1,18 +1,12 @@
-from app.config import (
-    CONVERSATIONS_DIR,
-    MAX_HISTORY_MESSAGES,
-    MODEL_NAME,
-    OPENAI_API_KEY,
-    SYSTEM_PROMPT_PATH,
-)
 from fastapi import FastAPI
 
 from app.api.routes import router
-from app.api.main import close_http_clients
+from app.config import CONVERSATIONS_DIR, MAX_HISTORY_MESSAGES, MODEL_NAME, OPENAI_API_KEY, SYSTEM_PROMPT_PATH
+from app.integration.chatgpt import OpenAIClient
+from app.integration.http_clients import close_http_clients
 from app.services.chat import ChatService
 from app.services.conversation_store import ConversationStore
 from app.utils.prompt_loader import PromptLoader
-from app.integration.chatgpt import OpenAIClient
 
 
 def create_app() -> FastAPI:

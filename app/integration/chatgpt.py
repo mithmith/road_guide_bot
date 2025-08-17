@@ -7,12 +7,11 @@ without dealing with low level configuration details.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
 
-from app.config import MODEL_NAME, OPENAI_API_KEY, OUT_PATH, PROMPT_PATH
+from app.config import MODEL_NAME, OPENAI_API_KEY
 
 
 class OpenAIClient:
@@ -43,18 +42,4 @@ class OpenAIClient:
             input=input_data,
         )
 
-    def run_prompt_file(
-        self,
-        prompt_path: Path = PROMPT_PATH,
-        out_path: Path = OUT_PATH,
-    ) -> str:
-        """Execute a prompt stored in ``prompt_path`` and save the result.
-
-        The text response is returned and written to ``out_path``.
-        """
-
-        prompt = prompt_path.read_text(encoding="utf-8")
-        resp = self.create(prompt)
-        text = resp.output_text
-        out_path.write_text(text, encoding="utf-8")
-        return text
+    # Removed deprecated run_prompt_file utility to simplify integration surface.

@@ -2,22 +2,16 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.api.main import (
-    annotate_intermediate_localities,
-    build_markdown,
-    ensure_coords,
-    enrich_localities_with_yandex,
-    ors_extract_steps,
-    ors_route,
-)
-from app.api.schemas import (
-    ChatRequest,
-    ChatResponse,
-    HealthResponse,
-    RouteRequest,
-    RouteResponse,
-)
+from app.api.schemas import ChatRequest, ChatResponse, HealthResponse, OptionsIn, RouteRequest, RouteResponse
+from app.integration.openrouteservice import ors_route
 from app.services.chat import ChatService
+from app.services.route_processing import (
+    annotate_intermediate_localities,
+    enrich_localities_with_yandex,
+    ensure_coords,
+    ors_extract_steps,
+)
+from app.services.route_text import build_markdown
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -52,23 +46,18 @@ async def route(req: RouteRequest) -> RouteResponse:
         a_lat, a_lon, a_label = await ensure_coords(req.a)
         b_lat, b_lon, b_label = await ensure_coords(req.b)
 
-        data = await ors_route(a_lat, a_lon, b_lat, b_lon, req.options)
+        opts = req.options or OptionsIn(language="ru", avoid_tolls=False)
+        data = await ors_route(a_lat, a_lon, b_lat, b_lon, opts)
         steps, total_m, total_s, coords, step_bounds = ors_extract_steps(data)
 
         if not steps:
-            return RouteResponse(
-                ok=False, type="error", message="Маршрут пуст (нет шагов)"
-            )
+            return RouteResponse(ok=False, type="error", message="Маршрут пуст (нет шагов)")
 
         # Обогащаем locality и добавляем промежуточные населённые пункты на длинных шагах
         await enrich_localities_with_yandex(steps)
-        await annotate_intermediate_localities(
-            steps, step_bounds, coords, min_step_m=5000, sample_interval_m=5000
-        )
+        await annotate_intermediate_localities(steps, step_bounds, coords, min_step_m=5000, sample_interval_m=5000)
 
-        md = build_markdown(
-            a_label, a_lat, a_lon, b_label, b_lat, b_lon, steps, total_m, total_s
-        )
+        md = build_markdown(a_label, a_lat, a_lon, b_label, b_lat, b_lon, steps, total_m, total_s)
         return RouteResponse(ok=True, markdown=md, steps=steps)
 
     except HTTPException as he:

@@ -23,10 +23,9 @@ class Settings(BaseSettings):
 
     # Environment variables
     openai_api_key: str = ""
-    yandex_geocoder_api_key: str
-    ors_api_key: str
-    prompt_path: Path = Path("main_prompt.md")
-    out_path: Path = Path("responce.md")
+    yandex_geocoder_api_key: str = ""
+    ors_api_key: str = ""
+    # Deprecated prompt file flow removed
 
     # Logging
     log_lvl: str = "INFO"
@@ -34,9 +33,7 @@ class Settings(BaseSettings):
 
     # External services
     yandex_geocoder_url: str = "https://geocode-maps.yandex.ru/v1"
-    ors_directions_url: str = (
-        "https://api.openrouteservice.org/v2/directions/driving-car/geojson"
-    )
+    ors_directions_url: str = "https://api.openrouteservice.org/v2/directions/driving-car/geojson"
     rev_geocoder_concurrency: int = 4
 
     class Config:
@@ -78,10 +75,7 @@ MAX_HISTORY_MESSAGES = settings.max_history_messages
 OPENAI_API_KEY = settings.openai_api_key
 YANDEX_GEOCODER_API_KEY = settings.yandex_geocoder_api_key
 ORS_API_KEY = settings.ors_api_key
-PROMPT_PATH = settings.prompt_path
-OUT_PATH = settings.out_path
 
 YANDEX_GEOCODER_URL = settings.yandex_geocoder_url
 ORS_DIRECTIONS_URL = settings.ors_directions_url
 REV_GEOCODER_CONCURRENCY = settings.rev_geocoder_concurrency
-
