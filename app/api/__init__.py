@@ -8,6 +8,7 @@ from app.config import (
 from fastapi import FastAPI
 
 from app.api.routes import router
+from app.api.main import close_http_clients
 from app.services.chat import ChatService
 from app.services.conversation_store import ConversationStore
 from app.utils.prompt_loader import PromptLoader
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
         app.state.chat_service = chat_service
 
     app.include_router(router, prefix="/api")
+    app.add_event_handler("shutdown", close_http_clients)
     return app
 
 
