@@ -1,6 +1,7 @@
 from typing import List
 
 from app.api.schemas import StepOut
+from app.config import logger
 
 
 def fmt_distance_m(m: float) -> str:
@@ -33,6 +34,16 @@ def build_markdown(
     total_m: float,
     total_s: float,
 ) -> str:
+    logger.debug(
+        "Building markdown: A=(%s,%s '%s') B=(%s,%s '%s') steps=%d",
+        a_lat,
+        a_lon,
+        a_label,
+        b_lat,
+        b_lon,
+        b_label,
+        len(steps),
+    )
     md = []
     md.append("# Маршрут A → B\n")
     md.append(f"**A:** {a_label} ({a_lat:.6f}, {a_lon:.6f})  \n**B:** {b_label} ({b_lat:.6f}, {b_lon:.6f})\n")

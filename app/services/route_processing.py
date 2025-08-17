@@ -7,13 +7,16 @@ from app.api.schemas import OptionsIn, PointIn, StepOut, ViaLocality
 from app.integration.openrouteservice import ors_route
 from app.integration.yandex_geocoder import geocode_forward, geocode_reverse
 from app.utils.geo import round6, sample_points_along
+from app.config import logger
 
 
 def ors_extract_steps(
     data: dict,
 ) -> Tuple[List[StepOut], float, float, List[List[float]], List[Tuple[int, int]]]:
+    logger.debug("Extracting steps from ORS response")
     features = data.get("features") or []
     if not features:
+        logger.info("ORS: empty features")
         raise HTTPException(422, "ORS: маршрут не найден (пустой features)")
     feat = features[0]
     props = feat.get("properties", {}) or {}
@@ -46,6 +49,7 @@ def ors_extract_steps(
             bounds.append((i0, i1))
             idx += 1
 
+    logger.debug("Extracted steps=%d total_m=%s total_s=%s", len(out), total_m, total_s)
     return out, total_m, total_s, coords, bounds
 
 
@@ -57,6 +61,7 @@ async def annotate_intermediate_localities(
     min_step_m: int = 5000,
     sample_interval_m: int = 5000,
 ) -> None:
+    logger.debug("Annotating intermediate localities")
     sample_tasks = []
     sample_meta: List[Tuple[int, float, float]] = []
 
@@ -71,6 +76,7 @@ async def annotate_intermediate_localities(
             sample_tasks.append(geocode_reverse(lat, lon, kind="locality"))
 
     if not sample_tasks:
+        logger.debug("No long steps to annotate")
         return
 
     results = await asyncio.gather(*sample_tasks, return_exceptions=True)
@@ -92,9 +98,11 @@ async def annotate_intermediate_localities(
         if s.locality:
             vias = [v for v in vias if v.name != s.locality]
         s.via_localities = vias or None
+    logger.debug("Annotated intermediate localities where applicable")
 
 
 async def enrich_localities_with_yandex(steps: List[StepOut]) -> None:
+    logger.debug("Enriching steps with locality via Yandex reverse geocode")
     tasks = []
     for s in steps:
         lat, lon = s.start_lat, s.start_lon
@@ -108,9 +116,11 @@ async def enrich_localities_with_yandex(steps: List[StepOut]) -> None:
         if isinstance(res, Exception) or not isinstance(res, dict):
             continue
         s.locality = res.get("locality") or res.get("province") or None
+    logger.debug("Enriched steps with locality")
 
 
 async def ensure_coords(p: PointIn) -> Tuple[float, float, str]:
+    logger.debug("Ensuring coords for point: %s", p)
     if p.lat is not None and p.lon is not None:
         return float(p.lat), float(p.lon), f"{p.lat:.6f}, {p.lon:.6f}"
     lat, lon = await geocode_forward(p.address)

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from app.integration.chatgpt import OpenAIClient
 from app.services.conversation_store import ConversationStore
 from app.utils.prompt_loader import PromptLoader
+from app.config import logger
 
 
 def utcnow_iso() -> str:
@@ -29,6 +30,7 @@ class ChatService:
         store: ConversationStore,
         max_history_messages: Optional[int] = None,
     ):
+        logger.debug("ChatService.__init__ model=%s max_history=%s", client.model_name, max_history_messages)
         self.client = client
         self.prompt_loader = prompt_loader
         self.store = store
@@ -66,14 +68,19 @@ class ChatService:
 
     def chat(self, user_text: str, conversation_id: Optional[str] = None) -> ChatResult:
         conv_id = conversation_id or str(uuid.uuid4())
+        logger.info("ChatService.chat conversation_id=%s", conv_id)
         system_prompt = self.prompt_loader.load()
+        logger.debug("System prompt loaded (%d chars)", len(system_prompt))
         history = self.store.load(conv_id)
+        logger.debug("Loaded history messages: %d", len(history))
 
         msgs = self._build_messages(system_prompt, history, user_text)
+        logger.debug("Built messages: %d", len(msgs))
 
         resp = self.client.create(msgs)
         assistant_text = resp.output_text
         response_id = getattr(resp, "id", None)
+        logger.info("OpenAI response id=%s (len=%d)", response_id, len(assistant_text or ""))
 
         user_msg = {
             "id": str(uuid.uuid4()),
@@ -85,6 +92,7 @@ class ChatService:
             "response_id": None,
         }
         self.store.append(conv_id, user_msg)
+        logger.debug("Appended user message to store")
 
         assistant_msg = {
             "id": str(uuid.uuid4()),
@@ -96,6 +104,7 @@ class ChatService:
             "response_id": response_id,
         }
         self.store.append(conv_id, assistant_msg)
+        logger.debug("Appended assistant message to store")
 
         return ChatResult(
             conversation_id=conv_id,

@@ -3,7 +3,12 @@ from typing import Dict, Optional, Tuple
 
 from fastapi import HTTPException
 
-from app.config import REV_GEOCODER_CONCURRENCY, YANDEX_GEOCODER_API_KEY, YANDEX_GEOCODER_URL
+from app.config import (
+    REV_GEOCODER_CONCURRENCY,
+    YANDEX_GEOCODER_API_KEY,
+    YANDEX_GEOCODER_URL,
+    logger,
+)
 from app.integration.http_clients import geocoder_client
 from app.utils.http import safe_http_error_message
 
@@ -18,9 +23,11 @@ async def geocode_forward(address: str) -> Tuple[float, float]:
         "results": 1,
         "format": "json",
     }
+    logger.debug("Yandex forward geocode: %s", address)
     r = await geocoder_client.get(YANDEX_GEOCODER_URL, params=params)
     if r.status_code != 200:
         _msg = safe_http_error_message(r)
+        logger.info("Yandex forward geocode HTTP %s: %s", r.status_code, _msg)
         raise HTTPException(r.status_code, f"Geocoder forward error: {_msg}")
 
     data = r.json()
@@ -37,6 +44,7 @@ async def geocode_forward(address: str) -> Tuple[float, float]:
         lon, lat = feat["geometry"]["coordinates"]
         return float(lat), float(lon)
     except Exception as e:
+        logger.info("Yandex forward geocode failed to parse response: %s", e)
         raise HTTPException(422, f"Не удалось геокодировать адрес: {address!r}. Детали: {e}")
 
 
@@ -56,6 +64,7 @@ async def geocode_reverse(lat: float, lon: float, kind: Optional[str] = None) ->
         r = await geocoder_client.get(YANDEX_GEOCODER_URL, params=params)
 
     if r.status_code != 200:
+        logger.info("Yandex reverse geocode HTTP %s", r.status_code)
         return {}
 
     data = r.json()
@@ -82,4 +91,5 @@ async def geocode_reverse(lat: float, lon: float, kind: Optional[str] = None) ->
         out.update(comps)
         return out
     except Exception:
+        logger.debug("Yandex reverse geocode: no components found")
         return {}

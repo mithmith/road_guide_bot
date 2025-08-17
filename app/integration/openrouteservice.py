@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import HTTPException
 
 from app.api.schemas import OptionsIn
-from app.config import ORS_API_KEY, ORS_DIRECTIONS_URL
+from app.config import ORS_API_KEY, ORS_DIRECTIONS_URL, logger
 from app.integration.http_clients import ors_client
 from app.utils.http import safe_http_error_message
 
@@ -17,6 +17,7 @@ async def ors_route(
 ) -> dict:
     if opt is None:
         opt = OptionsIn()
+    logger.debug("Requesting ORS: A=(%s,%s) B=(%s,%s) opts=%s", a_lat, a_lon, b_lat, b_lon, opt)
     headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
     body = {
         "coordinates": [[a_lon, a_lat], [b_lon, b_lat]],  # ORS: [lon, lat]
@@ -30,4 +31,5 @@ async def ors_route(
     r = await ors_client.post(ORS_DIRECTIONS_URL, headers=headers, json=body)
     if r.status_code != 200:
         raise HTTPException(502, f"ORS HTTP {r.status_code}: {safe_http_error_message(r)}")
+    logger.debug("ORS HTTP %s", r.status_code)
     return r.json()

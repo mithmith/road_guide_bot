@@ -1,5 +1,6 @@
 import math
 from typing import List, Tuple
+from app.config import logger
 
 
 def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -23,6 +24,7 @@ def round6(x: float) -> float:
 def sample_points_along(
     coords_lonlat: List[List[float]], interval_m: float, max_points: int = 10
 ) -> List[Tuple[float, float]]:
+    logger.debug("Sampling points along geometry: n_coords=%d interval_m=%s max_points=%d", len(coords_lonlat), interval_m, max_points)
     if len(coords_lonlat) < 2:
         return []
     seg_len: List[float] = []
@@ -58,4 +60,5 @@ def sample_points_along(
         lat = _interp(lat1, lat2, frac)
         lon = _interp(lon1, lon2, frac)
         pts.append((round6(lat), round6(lon)))
+    logger.debug("Sampled %d points", len(pts))
     return pts
