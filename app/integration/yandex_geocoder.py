@@ -3,28 +3,23 @@ from typing import Dict, Optional, Tuple
 
 from fastapi import HTTPException
 
-from app.config import (
-    REV_GEOCODER_CONCURRENCY,
-    YANDEX_GEOCODER_API_KEY,
-    YANDEX_GEOCODER_URL,
-    logger,
-)
+from app.config import settings, logger
 from app.integration.http_clients import geocoder_client
 from app.utils.http import safe_http_error_message
 
-_rev_sem = asyncio.Semaphore(REV_GEOCODER_CONCURRENCY)
+_rev_sem = asyncio.Semaphore(settings.rev_geocoder_concurrency)
 
 
 async def geocode_forward(address: str) -> Tuple[float, float]:
     params = {
-        "apikey": YANDEX_GEOCODER_API_KEY,
+        "apikey": settings.yandex_geocoder_api_key,
         "geocode": address,
         "lang": "ru_RU",
         "results": 1,
         "format": "json",
     }
     logger.debug("Yandex forward geocode: %s", address)
-    r = await geocoder_client.get(YANDEX_GEOCODER_URL, params=params)
+    r = await geocoder_client.get(settings.yandex_geocoder_url, params=params)
     if r.status_code != 200:
         _msg = safe_http_error_message(r)
         logger.info("Yandex forward geocode HTTP %s: %s", r.status_code, _msg)
@@ -50,7 +45,7 @@ async def geocode_forward(address: str) -> Tuple[float, float]:
 
 async def geocode_reverse(lat: float, lon: float, kind: Optional[str] = None) -> Dict[str, str]:
     params = {
-        "apikey": YANDEX_GEOCODER_API_KEY,
+        "apikey": settings.yandex_geocoder_api_key,
         "geocode": f"{lat},{lon}",
         "sco": "latlong",
         "lang": "ru_RU",
@@ -61,7 +56,7 @@ async def geocode_reverse(lat: float, lon: float, kind: Optional[str] = None) ->
         params["kind"] = kind
 
     async with _rev_sem:
-        r = await geocoder_client.get(YANDEX_GEOCODER_URL, params=params)
+        r = await geocoder_client.get(settings.yandex_geocoder_url, params=params)
 
     if r.status_code != 200:
         logger.info("Yandex reverse geocode HTTP %s", r.status_code)

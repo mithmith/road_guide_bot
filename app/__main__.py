@@ -1,12 +1,11 @@
-import os
-
 import uvicorn
+from app.config import settings
 
 # Позволяет запускать:  python -m app
-# Хост/порт можно настроить через переменные окружения.
-host = os.getenv("APP_HOST", "0.0.0.0")
-port = int(os.getenv("APP_PORT", "8080"))
-reload_opt = os.getenv("APP_RELOAD", "false").lower() == "true"
+# Хост/порт/reload берутся из Settings (и могут прийти из .env)
+host = settings.host
+port = settings.port
+reload_opt = settings.reload
 
 if __name__ == "__main__":
     # ``app.main`` no longer exists.  The FastAPI application instance is

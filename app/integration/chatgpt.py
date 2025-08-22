@@ -11,7 +11,7 @@ from typing import Any
 
 from openai import OpenAI
 
-from app.config import MODEL_NAME, OPENAI_API_KEY
+from app.config import settings
 
 
 class OpenAIClient:
@@ -19,8 +19,8 @@ class OpenAIClient:
 
     def __init__(
         self,
-        api_key: str = OPENAI_API_KEY,
-        model_name: str = MODEL_NAME,
+        api_key: str = settings.openai_api_key,
+        model_name: str = settings.model_name,
     ) -> None:
         self.model_name = model_name
         # ``OpenAI`` reads the key from the environment if ``api_key`` is ``None``.
